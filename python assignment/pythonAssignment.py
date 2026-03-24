@@ -36,7 +36,8 @@ print("odd numbers: ", odd)
 #set seaborn theme and color palette for plot and grid
 sns.set_theme(style="darkgrid", palette="flare")
 
-data = pd.read_csv('C:\\Users\\mnyx0\\OneDrive\\Documents\\ses407\\python-ses407\\python assignment\\O_chem_data.csv') #reads and stores csv into a dataframe using pandas
+#reads and stores csv into a dataframe using pandas
+data = pd.read_csv('C:\\Users\\mnyx0\\OneDrive\\Documents\\ses407\\python-ses407\\python assignment\\O_chem_data.csv') 
 
 #converts data frame from wide (multiple columns) to long format (fewer columns) to be used with seaborn
     #id_vars specifies the column to use as identifier (x) variable (temperature)
@@ -59,7 +60,7 @@ plt.figure(figsize = (10, 6)) #plot figure size
 
 #creates scatterplot with seaborn, hue variable sets each compound to a different color
 # palette sets color scheme, legend = 'full' forces comprehenseve legend display
-sns.scatterplot(data=df_melted,
+sns.lineplot(data=df_melted,
                 x='Temperature[C]', 
                 y='log_concentration',
                 hue='compound',
@@ -70,5 +71,7 @@ sns.scatterplot(data=df_melted,
 plt.xlabel('temperature (°C)')
 plt.ylabel('log-concentration of each compound')
 plt.title('Alcohol to Alkene Dehydration Reactions')
+
+plt.tight_layout() #adjusts plot to fit within figure area  
 
 plt.show() #display plot
