@@ -1,0 +1,26 @@
+import
+
+class arduino manager:
+    init /
+    arduino_detection/arduino_handshake
+    connect with arduino serial (print message)
+    send_command(cmd)
+    capture img: (single capture)
+    read raw data from arduino
+
+helper fxns:
+    numpy_to_heatmap(numpy)
+    directory_management(make directory if not already existing)
+    create_set_subfolder
+    generate_file_name(counter)
+
+capture_sequence_set(loop capture img 15 times, process data, save each heatmap generated, increment counter, delay)
+
+main loop:
+    cmd menu (open, close, snap, exit)
+    get normalized(userInput())
+    route cmds:
+        snap --> capture_sequence_set()
+        close --> send_command()
+        open --> send_command()
+        exit --> operation cleanup on aisle my pants
