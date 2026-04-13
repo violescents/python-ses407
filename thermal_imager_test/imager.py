@@ -84,7 +84,7 @@ class masterController:
 
 
     def connection(self):
-        if self.port is None or not self.is_connected:
+        if self.port is None:
             return False
         try: 
             serial.Serial(
