@@ -236,4 +236,57 @@ class masterController:
             logging.warning("cleanup close command failed: %s", e)
         finally:
             self.disconnect()
+            
+def show_menu():
+    print("\n=== IR Imager Control Menu ===")
+    print("open --> open shutter")
+    print("close --> close shutter")
+    print("snap  --> capture one full set of images")
+    print("exit  --> close shutter nd quit")
+    print("=========================================\n")
+
+def main():
+    controller = masterController(
+        baud_rate=115200,
+        timeout=5,
+        images_per_set=15,
+        total_sets=3,
+        delay_between_images=1.0
+    )
+
+    controller.findPort()
+    if controller.port is None:
+        return
+    if not controller.connection():
+        return
     
+    show_menu()
+
+    try: 
+        while True:
+            user_cmd = input("imager> ").strip().lower()
+
+            if user_cmd == "open":
+                if controller.sendCommand("open"):
+                    print("shutter open !")
+                continue
+            elif user_cmd == "close":
+                if controller.sendCommand("close"):
+                    print("shutter closed !")
+                continue
+            elif user_cmd == "snap":
+                controller.captureSequence()
+                continue
+            elif user_cmd == "exit":
+                print("exiting...")
+                break
+            else: 
+                print("unknown command, try again")
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt recieved. exiting...")
+
+    finally:
+        controller.cleanup()
+
+if __name__=="__main__":
+    main()
