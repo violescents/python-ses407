@@ -91,9 +91,22 @@ class masterController:
                 filename
             ])
 
-    def findPort(self, vid=0x239A, pid=0x802B): 
-        #laterproblem
-        return None
+    def findPort(self, vid=0x239A, pid=0x802B):
+        ports = serial.tools.list_ports.comports()
+        candidate_ports = []
+
+        for port in ports:
+            if port.vid == vid and port.pid == pid:
+                candidate_ports.append(port.device)
+                logging.info("VID/PID match found on %s", port.device)
+
+        if not candidate_ports:
+            logging.error("No device found with VID=0x%04X PID=0x%04X", vid, pid)
+            return None
+
+        self.port = candidate_ports[0]
+        logging.info("Selected port: %s", self.port)
+        return self.port
     
     def connection(self):
         if self.port is None:
@@ -236,7 +249,7 @@ class masterController:
             logging.warning("cleanup close command failed: %s", e)
         finally:
             self.disconnect()
-            
+
 def show_menu():
     print("\n=== IR Imager Control Menu ===")
     print("open --> open shutter")
