@@ -42,12 +42,12 @@ class masterController:
             output_folder="thermal_captures",
             images_per_set=15,
             total_sets=3,
-            delay_between_images=1.0):
+            image_delay=1.0):
         self.baud_rate = baud_rate
         self.timeout = timeout
         self.images_per_set = images_per_set
         self.total_sets = total_sets
-        self.delay_between_images = delay_between_images
+        self.image_delay = image_delay
 
 # everytime script runs folder gets created with timestamp of script run
         run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -97,25 +97,25 @@ class masterController:
 #finds/stores comport itsybitsy plugged into, (1st w/hardware nd validated with handshake)
     def findPort(self, vid=0x239A, pid=0x802B):
         ports = serial.tools.list_ports.comports()
-        candidate_ports = []
+        potential_ports = []
 
         for port in ports:
             if port.vid == vid and port.pid == pid:
-                candidate_ports.append(port.device)
+                potential_ports.append(port.device)
                 logging.info("VID/PID match found on %s", port.device)
 
-        if not candidate_ports:
+        if not potential_ports:
             logging.error("No device found with VID=0x%04X PID=0x%04X", vid, pid)
             return None
 
-        self.port = candidate_ports[0]
+        self.port = potential_ports[0]
         logging.info("Selected port: %s", self.port)
         return self.port
     
     #est serial connection
     def connection(self):
         if self.port is None:
-            logging.error("no port, run findPort first.")
+            logging.error("no port")
             return False
         try:
             self.serial_connection = serial.Serial(self.port, self.baud_rate, timeout=self.timeout)
@@ -134,7 +134,7 @@ class masterController:
                 print(f"itsyBitsy connected on {self.port}")
                 return True
             
-            logging.warning("Handshake failed on %s, response was: %s", self.port, response)
+            logging.warning("handshake failed on %s, got: %s", self.port, response)
             self.serial_connection.close()
             self.serial_connection = None
             self.is_connected=False
@@ -173,26 +173,26 @@ class masterController:
         #creates raw data array from IR camera output
     def rawFrameRead(self):
         if self.serial_connection is None or not self.is_connected:
-            raise RuntimeError("Serial unreachable")
+            raise RuntimeError("serial unreachable")
         
         try:
             data = []
-            expected_rows =24
-            expected_cols = 32
+            rows =24
+            cols = 32
 
-            for _ in range(expected_rows):
+            for _ in range(rows):
                 line = self.serial_connection.readline().decode("utf-8", errors = "replace").strip()
                 if not line:
                     raise ValueError("incomplete frame: empty line recieved")
                 
                 row_values = [float(v) for v in line.split(",") if v.strip()]
-                if len(row_values) != expected_cols:
-                    raise ValueError(f"Expected {expected_cols} values, got {len(row_values)}")
+                if len(row_values) != cols:
+                    raise ValueError(f"expected {cols} values, got {len(row_values)}")
                 data.extend(row_values)
-            if len(data) != expected_rows * expected_cols:
-                raise ValueError(f"Expected {expected_rows * expected_cols} values, got {len(data)}")
+            if len(data) != 768:
+                raise ValueError(f"Expected {rows * cols} values, got {len(data)}")
             
-            return np.array(data, dtype=np.float32).reshape((expected_rows, expected_cols))
+            return np.array(data, dtype=np.float32).reshape((rows, cols))
         
         except (serial.SerialException, ValueError) as e:
             logging.error("failed to read frame: %s", e)
@@ -213,10 +213,10 @@ class masterController:
             logging.exception("Image cap failed: %s", e)
             return None
     
-    #sends snap command (x images per set) to preform captures, generateHeatMap() to save capture, metadata, terminal + counter + set variables update
+    #sends snap command (x images per set) to preform captures nd save capture, metadata nd counter + set variables update
     def captureSequence(self, delay=None):
         if delay is None:
-            delay = self.delay_between_images
+            delay = self.image_delay
         if self.current_set > self.total_sets:
             print("all sets captured")
             return
@@ -276,7 +276,7 @@ def main():
         timeout=5,
         images_per_set=15,
         total_sets=3,
-        delay_between_images=1.0
+        image_delay=1.0
     )
 
     controller.findPort()
@@ -308,7 +308,7 @@ def main():
             else: 
                 print("unknown command, try again")
     except KeyboardInterrupt:
-        print("\nKeyboard interrupt recieved. exiting...")
+        print("\nkeyboard interrupt recieved. exiting...")
 
     finally:
         controller.cleanup()
