@@ -27,7 +27,7 @@ def generateHeatMap(raw, avg_temp, path_name, preview_seconds):
     ax.axis("off")
 
     overlay_text = f"Avg Temp: {avg_temp:.2f} °C"
-    ax.text(0.02, 0.98, overlay_text, transform=ax.transAxes, fontsize=12, color="white", verticalalignment="top", bbox=dict(facecolor="black", alpha=0.6, pad =4))
+    ax.text(0.02, 0.98, overlay_text, transform=ax.transAxes, fontsize=12, color="white", verticalalignment="top", bbox=dict(facecolor="black", alpha=0.6, pad=4))
     plt.show(block = False)
     plt.pause(preview_seconds)
     fig.savefig(path_name, bbox_inches="tight", dpi=300)
@@ -56,7 +56,7 @@ class masterController:
         os.makedirs(self.output_folder, exist_ok=True)
 
 #metadata created for each image captured, can be taken out if deemed unnecessary
-        self.metadata_csv = os.path.join(self.output_folder, "capture_metadat.csv")
+        self.metadata_csv = os.path.join(self.output_folder, "capture_metadata.csv")
         self._init_metadata_csv()
 
         self.current_set = 1 #1 set = 15 images
@@ -198,7 +198,7 @@ class masterController:
             logging.error("failed to read frame: %s", e)
             return None
         
-        #image capture command sent
+    #image capture command sent
     def capture(self):
         try:
             sent = self.sendCommand("snap")
@@ -226,7 +226,7 @@ class masterController:
         print(f"starting set {self.current_set}/{self.total_sets}")
 
         for i in range(self.images_per_set):
-            frame = self.imgCapture()
+            frame = self.capture()
             if frame is None:
                 logging.error("stopping set %d due to capture failure", self.current_set)
                 return
