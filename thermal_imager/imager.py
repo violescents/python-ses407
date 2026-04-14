@@ -113,7 +113,7 @@ class masterController:
         return self.port
     
     #est serial connection
-    def connection(self):
+    def handshake(self):
         if self.port is None:
             logging.error("no port")
             return False
@@ -145,7 +145,7 @@ class masterController:
             return False
         
     #exit serial for cleanup
-    def disconnect(self):
+    def serialDisconnect(self):
         try:
             if self.serial_connection and self.serial_connection.is_open:
                 self.serial_connection.close()
@@ -157,7 +157,7 @@ class masterController:
             logging.info("serial connection closed")
 
 #handles user terminal input to send command to itsybitsy
-    def sendCommand(self, cmd):
+    def sendCMD(self, cmd):
         if self.serial_connection is None or not self.is_connected:
             raise RuntimeError("serial unreachable")
         try:
@@ -201,7 +201,7 @@ class masterController:
     #image capture command sent
     def capture(self):
         try:
-            sent = self.sendCommand("snap")
+            sent = self.sendCMD("snap")
             if not sent:
                 return None
             time.sleep(1)
@@ -214,7 +214,7 @@ class masterController:
             return None
     
     #sends snap command (x images per set) to preform captures nd save capture, metadata nd counter + set variables update
-    def captureSequence(self, delay=None):
+    def capture_Sequence(self, delay=None):
         if delay is None:
             delay = self.image_delay
         if self.current_set > self.total_sets:
@@ -253,17 +253,17 @@ class masterController:
     def cleanup(self):
         try:
             if self.is_connected:
-                self.sendCommand("close")
+                self.sendCMD("close")
                 time.sleep(0.5)
         except Exception as e:
             logging.warning("cleanup close command failed: %s", e)
         finally:
-            self.disconnect()
+            self.serialDisconnect()
 
 #command menu printed in terminal for ease of user use
-def show_menu():
+def show_Menu():
     print("\n=== IR Imager Control Menu ===")
-    print("open --> open shutter")
+    print("open--> open shutter")
     print("close --> close shutter")
     print("snap  --> capture one full set of images")
     print("exit  --> close shutter nd quit")
@@ -282,27 +282,26 @@ def main():
     controller.findPort()
     if controller.port is None:
         return
-    if not controller.connection():
+    if not controller.handshake():
         return
     
-    show_menu()
+    show_Menu()
 # user input handling loop 
     try: 
         while True:
-            user_cmd = input("imager> ").strip().lower()
-
-            if user_cmd == "open":
-                if controller.sendCommand("open"):
+            userCMD = input("imager> ").strip().lower()
+            if userCMD == "open":
+                if controller.sendCMD("open"):
                     print("shutter open !")
                 continue
-            elif user_cmd == "close":
-                if controller.sendCommand("close"):
+            elif userCMD == "close":
+                if controller.sendCMD("close"):
                     print("shutter closed !")
                 continue
-            elif user_cmd == "snap":
-                controller.captureSequence()
+            elif userCMD == "snap":
+                controller.capture_Sequence()
                 continue
-            elif user_cmd == "exit":
+            elif userCMD == "exit":
                 print("exiting...")
                 break
             else: 
