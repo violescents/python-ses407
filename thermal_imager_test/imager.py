@@ -11,17 +11,15 @@ import matplotlib.pyplot as plt
 import serial 
 import serial.tools.list_ports
 
-#logging config
-logging.basicConfig(
-    level=logging.info,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+#logging config --> error handling
+logging.basicConfig(level=logging.INFO, 
+                    format="%(asctime)s - %(levelname)s - %(message)s")
 
-#pep8 naming convention
 #itsyBitsy USB\VID_239A&PID_802B&MI_00
 
+# helper fxn: creates heatmap figure based on raw data array, adds avg temp overlay, preview
 def generateHeatMap(raw, avg_temp, path_name, preview_seconds):
-    fig, ax = plt.subplot(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(8,6))
 
     im = ax.imshow(raw, interpolation='bicubic', cmap='magma')
     fig.colorbar(im, ax=ax, label='Temperature (°C)')
@@ -35,6 +33,7 @@ def generateHeatMap(raw, avg_temp, path_name, preview_seconds):
     fig.savefig(path_name, bbox_inches="tight", dpi=300)
     plt.close(fig)
 
+#main class for handling serial connection and data processing
 class masterController:
     def __init__(
             self,
@@ -50,21 +49,24 @@ class masterController:
         self.total_sets = total_sets
         self.delay_between_images = delay_between_images
 
+# everytime script runs folder gets created with timestamp of script run
         run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_stamp = run_stamp
         self.output_folder = os.path.join(output_folder, f"run_{run_stamp}")
         os.makedirs(self.output_folder, exist_ok=True)
 
+#metadata created for each image captured, can be taken out if deemed unnecessary
         self.metadata_csv = os.path.join(self.output_folder, "capture_metadat.csv")
         self._init_metadata_csv()
 
-        self.current_set = 1
-        self.counter = 1
+        self.current_set = 1 #1 set = 15 images
+        self.counter = 1 #image counter
         
         self.port = None
         self.serial_connection = None
         self.is_connected = False
 
+#metadata csv creation functions:
     def _init_metadata_csv(self):
         with open(self.metadata_csv, "w", newline="")as f:
             writer = csv.writer(f)
@@ -91,6 +93,8 @@ class masterController:
                 filename
             ])
 
+
+#finds/stores comport itsybitsy plugged into, (1st w/hardware nd validated with handshake)
     def findPort(self, vid=0x239A, pid=0x802B):
         ports = serial.tools.list_ports.comports()
         candidate_ports = []
@@ -108,6 +112,7 @@ class masterController:
         logging.info("Selected port: %s", self.port)
         return self.port
     
+    #est serial connection
     def connection(self):
         if self.port is None:
             logging.error("no port, run findPort first.")
@@ -139,6 +144,7 @@ class masterController:
             self.is_connected = False
             return False
         
+    #exit serial for cleanup
     def disconnect(self):
         try:
             if self.serial_connection and self.serial_connection.is_open:
@@ -150,6 +156,7 @@ class masterController:
             self.is_connected = False
             logging.info("serial connection closed")
 
+#handles user terminal input to send command to itsybitsy
     def sendCommand(self, cmd):
         if self.serial_connection is None or not self.is_connected:
             raise RuntimeError("serial unreachable")
@@ -163,7 +170,7 @@ class masterController:
             logging.exception("failed to send command '%s': %s", cmd, e)
             self.is_connected = False
             return False
-        
+        #creates raw data array from IR camera output
     def rawFrameRead(self):
         if self.serial_connection is None or not self.is_connected:
             raise RuntimeError("Serial unreachable")
@@ -191,6 +198,7 @@ class masterController:
             logging.error("failed to read frame: %s", e)
             return None
         
+        #image capture command sent
     def capture(self):
         try:
             sent = self.sendCommand("snap")
@@ -205,6 +213,7 @@ class masterController:
             logging.exception("Image cap failed: %s", e)
             return None
     
+    #sends snap command (x images per set) to preform captures, generateHeatMap() to save capture, metadata, terminal + counter + set variables update
     def captureSequence(self, delay=None):
         if delay is None:
             delay = self.delay_between_images
@@ -240,6 +249,7 @@ class masterController:
         print(f"set {self.current_set} complete")
         self.current_set +=1
     
+    #cleanup function (sends shutter close signal, exits serial) --> maybe instead of shutter close signal can run a check to ensure shutter closed then if yes exit if not close nd then exit
     def cleanup(self):
         try:
             if self.is_connected:
@@ -250,6 +260,7 @@ class masterController:
         finally:
             self.disconnect()
 
+#command menu printed in terminal for ease of user use
 def show_menu():
     print("\n=== IR Imager Control Menu ===")
     print("open --> open shutter")
@@ -257,6 +268,7 @@ def show_menu():
     print("snap  --> capture one full set of images")
     print("exit  --> close shutter nd quit")
     print("=========================================\n")
+
 
 def main():
     controller = masterController(
@@ -274,7 +286,7 @@ def main():
         return
     
     show_menu()
-
+# user input handling loop 
     try: 
         while True:
             user_cmd = input("imager> ").strip().lower()
@@ -301,5 +313,6 @@ def main():
     finally:
         controller.cleanup()
 
+#makes program main() auto-run only if this file is called directly not if imported, unnecessary but good practice (i believe)
 if __name__=="__main__":
     main()
