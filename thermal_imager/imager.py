@@ -236,7 +236,7 @@ class masterController:
             filename = f"{self.counter:02d}_avg_{avg_temp:.2f}C.png"
             save_path = os.path.join(set_folder, filename)
 
-            generateHeatMap(frame, avg_temp, save_path)
+            generateHeatMap(frame, avg_temp, save_path, preview_seconds = 0.1)
 
             self._append_metadata_row(set_number=self.current_set, image_in_set=image_num_in_set, global_image_number=self.counter, avg_temp=avg_temp, filename=filename)
 
